@@ -359,3 +359,28 @@ See [`RenderGroupCellProps`](#rendergroupcellprops)
 - `R`, `TRow`: Row type
 - `SR`, `TSummaryRow`: Summary row type
 - `K`: Row key type
+
+## To Serve Locally
+
+## To build website
+
+```sh
+npm run-script build:website
+```
+
+You can use a static file server to serve the contents of your dist directory. There are many tools available for this, but one simple and common tool is serve, which you can install and use globally via npm.
+
+Install serve (if you haven't already):
+
+```sh
+npm install -g serve
+```
+
+Serve your dist directory:
+Navigate to the root of your dist directory and run:
+
+```sh
+serve
+```
+
+By default, serve will host your directory at http://localhost:3000 (or another port if 3000 is busy).
