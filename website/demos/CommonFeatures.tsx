@@ -51,13 +51,28 @@ interface Row {
   id: number;
   title: string;
   client: string;
-  area: string;
+  linkedin: string;
   country: string;
   contact: string;
   assignee: string;
   progress: number;
   available: boolean;
 }
+
+function LinkedInCopyButton({ row, onRowChange }) {
+  return (
+    <button
+      onClick={() => {
+        const newRow = { ...row, linkedin: row.client };
+        onRowChange(newRow);
+      }}
+      style={{ marginLeft: 8 }}
+    >
+      Copy to Linkedin
+    </button>
+  );
+}
+
 
 function getColumns(
   countries: readonly string[],
@@ -91,8 +106,9 @@ function getColumns(
       renderEditCell: textEditor
     },
     {
-      key: 'area',
-      name: 'Area',
+      key: 'linkedin',
+      name: 'Linkedin',
+      draggable: true,
       renderEditCell: textEditor
     },
     {
@@ -208,7 +224,7 @@ function createRows(): readonly Row[] {
       id: i,
       title: `Task #${i + 1}`,
       client: faker.company.name(),
-      area: faker.person.jobArea(),
+      linkedin: '',
       country: faker.location.country(),
       contact: faker.internet.exampleEmail(),
       assignee: faker.person.fullName(),
@@ -227,7 +243,7 @@ function getComparator(sortColumn: string): Comparator {
     case 'assignee':
     case 'title':
     case 'client':
-    case 'area':
+    case 'linkedin':
     case 'country':
     case 'contact':
       return (a, b) => {
