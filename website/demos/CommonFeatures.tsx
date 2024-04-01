@@ -15,6 +15,42 @@ import type { Direction } from '../../src/types';
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
 
+async function fetchData(clientName) {
+  const response = await fetch(
+    `${import.meta.env.VITE_REACT_APP_SEARCH_URL}${encodeURIComponent(`${clientName} linkedin.com`)}`,
+    {
+      mode: 'cors' // This is the default if not specified
+    }
+  );
+  return response.json();
+}
+
+function extractLink(data) {
+  // Assuming data is an array and we need to extract the link of the first result
+  return data?.data?.[0]?.link || '';
+}
+
+function useSearchAndUpdate(rows, activeSearchRowId, setRows, setActiveSearchRowId) {
+  useEffect(() => {
+    const searchClient = async () => {
+      if (activeSearchRowId !== null) {
+        const row = rows.find((r) => r.id === activeSearchRowId);
+        if (row) {
+          const data = await fetchData(row.client);
+          const link = extractLink(data);
+          const updatedRow = { ...row, linkedin: link };
+          setRows((currentRows) =>
+            currentRows.map((r) => (r.id === activeSearchRowId ? updatedRow : r))
+          );
+        }
+        setActiveSearchRowId(null); // Reset the active search ID
+      }
+    };
+
+    searchClient();
+  }, [activeSearchRowId, rows]);
+}
+
 // console.log(import.meta.env);
 
 const toolbarClassname = css`
@@ -43,6 +79,18 @@ const dialogContainerClassname = css`
   }
 `;
 
+const searchButtonStyle = css`
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  margin-left: 8px;
+`;
+
+const cellWithButtonStyle = css`
+  &:hover .${searchButtonStyle} {
+    opacity: 1;
+  }
+`;
+
 interface SummaryRow {
   id: string;
   totalCount: number;
@@ -61,9 +109,12 @@ interface Row {
   available: boolean;
 }
 
-function LinkedInCopyButton({ row, onRowChange, initiateSearch }) {
+function LinkedInCopyButton({ row, initiateSearch, className = '' }) {
+  // Directly include the searchButtonStyle and any additional classes passed via props
+  const buttonClass = `${searchButtonStyle} ${className}`;
+
   return (
-    <button onClick={() => initiateSearch(row.id)} style={{ marginLeft: 8 }}>
+    <button onClick={() => initiateSearch(row.id)} className={buttonClass}>
       Search Client
     </button>
   );
@@ -102,14 +153,15 @@ function getColumns(
       renderEditCell: textEditor,
       renderCell({ row, onRowChange }) {
         return (
-          <>
+          <div className={cellWithButtonStyle}>
             {row.client}
             <LinkedInCopyButton
               row={row}
               onRowChange={onRowChange}
               initiateSearch={initiateSearch}
+              className={searchButtonStyle}
             />
-          </>
+          </div>
         );
       }
     },
@@ -227,7 +279,7 @@ function createRows(): readonly Row[] {
   const now = Date.now();
   const rows: Row[] = [];
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 4; i++) {
     rows.push({
       id: i,
       title: `Task #${i + 1}`,
@@ -278,28 +330,8 @@ export default function CommonFeatures({ direction }: Props) {
   // New state to track the ID of the row being searched
   const [activeSearchRowId, setActiveSearchRowId] = useState(null);
 
-  useEffect(() => {
-    const searchClient = async () => {
-      if (activeSearchRowId !== null) {
-        const row = rows.find((r) => r.id === activeSearchRowId);
-        if (row) {
-          const response = await fetch(
-            `${import.meta.env.VITE_REACT_APP_SEARCH_URL}${encodeURIComponent(row.client)}`,
-            {
-              mode: 'cors' // This is the default if not specified
-            }
-          );
-          const data = await response.json();
-          // Assuming the response data is what should be set in the Linkedin column
-          const updatedRow = { ...row, linkedin: JSON.stringify(data) };
-          setRows(rows.map((r) => (r.id === activeSearchRowId ? updatedRow : r)));
-        }
-        setActiveSearchRowId(null); // Reset the active search ID
-      }
-    };
-
-    searchClient();
-  }, [activeSearchRowId, rows]);
+  // Use the custom hook here
+  useSearchAndUpdate(rows, activeSearchRowId, setRows, setActiveSearchRowId);
 
   const initiateSearch = (rowId) => {
     setActiveSearchRowId(rowId);
