@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { faker } from '@faker-js/faker';
 
-import DataGrid, {
-  SelectCellFormatter,
-  SelectColumn,
-  textEditor,
-  type Column,
-  type SortColumn
-} from '../../src';
+import DataGrid, { SelectColumn, textEditor, type Column, type SortColumn } from '../../src';
 import type { Direction } from '../../src/types';
+import AvailableCellRenderer from './components/columns/AvailableCellRenderer'; // Adjust the import path as necessary
+
 import EditCountryCell from './components/columns/EditCountryCell'; // Adjust the import path according to your project structure
 import { EditProgressCell } from './components/columns/EditProgressCell'; // Adjust the import path according to your project structure
-
+import LinkedInInfoButton from './components/columns/LinkedInInfoButton';
 import { ExportButton } from './components/ExportButton'; // Adjust the path as necessary
 
 import { useSortedRows } from './utils/sortRows'; // Adjust the import path as necessary
@@ -78,6 +74,10 @@ interface Row {
   contact: string;
   progress: number;
   available: boolean;
+  linkedinImageUrl?: string;
+  linkedinHeadline?: string;
+  companyOrSchoolLink?: string;
+  companyOrSchool?: string;
 }
 
 function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }) {
@@ -94,7 +94,8 @@ function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }
 function getColumns(
   countries: readonly string[],
   direction: Direction,
-  initiateSearch
+  initiateSearch,
+  updateRow: (rowId: number, partialRowUpdate: Partial<Row>) => void
 ): readonly Column<Row, SummaryRow>[] {
   return [
     SelectColumn,
@@ -138,9 +139,59 @@ function getColumns(
     },
     {
       key: 'linkedin',
-      name: 'Linkedin',
-      draggable: true,
-      renderEditCell: textEditor
+      name: 'LinkedIn',
+      renderCell: ({ row }) => (
+        <div className={cellWithButtonStyleString}>
+          {row.linkedin && (
+            <>
+              {/* Display LinkedInInfoButton only if there's a LinkedIn URL */}
+              <LinkedInInfoButton
+                linkedinUrl={row.linkedin}
+                onLinkedInDataFetched={(linkedinData) => {
+                  // Function to handle the detailed LinkedIn data
+                  // Here, you would update the row with the detailed information
+                  updateRow(row.id, {
+                    // Update the row with the detailed LinkedIn data
+                    linkedinImageUrl: linkedinData.imageUrl,
+                    linkedinHeadline: linkedinData.headline,
+                    companyOrSchool: linkedinData.companyOrSchool,
+                    companyOrSchoolLink: linkedinData.companyOrSchoolLink
+                  });
+                }}
+              />
+              <a href={row.linkedin} target="_blank" rel="noopener noreferrer">
+                View LinkedIn
+              </a>
+            </>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'linkedinImageUrl',
+      name: 'Image URL',
+      renderCell: ({ row }) => (
+        <img src={row.linkedinImageUrl} alt="" style={{ width: 50, height: 50 }} />
+      )
+    },
+    {
+      key: 'linkedinHeadline',
+      name: 'Headline',
+      renderCell: ({ row }) => row.linkedinHeadline
+    },
+    {
+      key: 'companyOrSchool',
+      name: 'Company/School',
+      renderCell: ({ row }) => row.companyOrSchool
+    },
+    {
+      key: 'companyOrSchoolLink',
+      name: 'Company/School Link',
+      renderCell: ({ row }) => (
+        <a href={row.companyOrSchoolLink} target="_blank" rel="noreferrer">
+          Link
+        </a>
+      )
     },
     {
       key: 'country',
@@ -181,17 +232,13 @@ function getColumns(
     {
       key: 'available',
       name: 'Available',
-      renderCell({ row, onRowChange, tabIndex }) {
-        return (
-          <SelectCellFormatter
-            value={row.available}
-            onChange={() => {
-              onRowChange({ ...row, available: !row.available });
-            }}
-            tabIndex={tabIndex}
-          />
-        );
-      },
+      renderCell: (props) => (
+        <AvailableCellRenderer
+          row={props.row}
+          onRowChange={props.onRowChange}
+          tabIndex={props.tabIndex}
+        />
+      ),
       renderSummaryCell({ row: { yesCount, totalCount } }) {
         return `${Math.floor((100 * yesCount) / totalCount)}% ✔️`;
       }
@@ -233,6 +280,13 @@ export default function CommonFeatures({ direction }: Props) {
   // Use the custom hook here
   useSearchAndUpdate(rows, activeSearchRowId, setRows, setActiveSearchRowId);
 
+  // Define updateRow here to ensure it has access to setRows
+  const updateRow = (rowId: number, partialRowUpdate: Partial<Row>) => {
+    setRows((currentRows) =>
+      currentRows.map((row) => (row.id === rowId ? { ...row, ...partialRowUpdate } : row))
+    );
+  };
+
   const initiateSearch = (rowId) => {
     setActiveSearchRowId(rowId);
   };
@@ -243,8 +297,8 @@ export default function CommonFeatures({ direction }: Props) {
   }, []);
   // Modify your getColumns function similarly to include the LinkedInCopyButton with the new initiateSearch prop
   const columns = useMemo(
-    () => getColumns(countries, direction, initiateSearch), // Ensure initiateSearch is passed here
-    [countries, direction, initiateSearch] // Add initiateSearch as a dependency
+    () => getColumns(countries, direction, initiateSearch, updateRow),
+    [countries, direction, initiateSearch, updateRow]
   );
 
   const summaryRows = useMemo((): readonly SummaryRow[] => {
