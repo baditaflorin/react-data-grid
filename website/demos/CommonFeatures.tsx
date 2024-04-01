@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { faker } from '@faker-js/faker';
 
 import DataGrid, {
@@ -11,11 +10,14 @@ import DataGrid, {
 } from '../../src';
 import { textEditorClassname } from '../../src/editors/textEditor';
 import type { Direction } from '../../src/types';
+import { EditProgressCell } from './components/columns/EditProgressCell'; // Adjust the import path according to your project structure
+
+import { ExportButton } from './components/ExportButton'; // Adjust the path as necessary
+
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
 import {
   cellWithButtonStyleString,
-  dialogContainerStyleString,
   searchButtonStyleString,
   toolbarStyleString
 } from './styles.js';
@@ -171,39 +173,7 @@ function getColumns(
           </>
         );
       },
-      renderEditCell({ row, onRowChange, onClose }) {
-        return createPortal(
-          <div
-            dir={direction}
-            className={dialogContainerStyleString}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                onClose();
-              }
-            }}
-          >
-            <dialog open>
-              <input
-                autoFocus
-                type="range"
-                min="0"
-                max="100"
-                value={row.progress}
-                onChange={(e) => onRowChange({ ...row, progress: e.target.valueAsNumber })}
-              />
-              <menu>
-                <button type="button" onClick={() => onClose()}>
-                  Cancel
-                </button>
-                <button type="button" onClick={() => onClose(true)}>
-                  Save
-                </button>
-              </menu>
-            </dialog>
-          </div>,
-          document.body
-        );
-      },
+      renderEditCell: (props) => <EditProgressCell {...props} direction={direction} />,
       editorOptions: {
         displayCellContent: true
       }
@@ -367,28 +337,5 @@ export default function CommonFeatures({ direction }: Props) {
       </div>
       {gridElement}
     </>
-  );
-}
-
-function ExportButton({
-  onExport,
-  children
-}: {
-  onExport: () => Promise<unknown>;
-  children: React.ReactChild;
-}) {
-  const [exporting, setExporting] = useState(false);
-  return (
-    <button
-      type="button"
-      disabled={exporting}
-      onClick={async () => {
-        setExporting(true);
-        await onExport();
-        setExporting(false);
-      }}
-    >
-      {exporting ? 'Exporting' : children}
-    </button>
   );
 }

@@ -1,5 +1,5 @@
 import type { Direction } from '../../src/types';
 
-export interface Props {
+export type Props = {
   direction: Direction;
-}
+};
