@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { faker } from '@faker-js/faker';
 import { css } from '@linaria/core';
@@ -14,6 +14,8 @@ import { textEditorClassname } from '../../src/editors/textEditor';
 import type { Direction } from '../../src/types';
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
+
+// console.log(import.meta.env);
 
 const toolbarClassname = css`
   display: flex;
@@ -59,23 +61,18 @@ interface Row {
   available: boolean;
 }
 
-function LinkedInCopyButton({ row, onRowChange }) {
+function LinkedInCopyButton({ row, onRowChange, initiateSearch }) {
   return (
-    <button
-      onClick={() => {
-        const newRow = { ...row, linkedin: row.client };
-        onRowChange(newRow);
-      }}
-      style={{ marginLeft: 8 }}
-    >
-      Copy to Linkedin
+    <button onClick={() => initiateSearch(row.id)} style={{ marginLeft: 8 }}>
+      Search Client
     </button>
   );
 }
 
 function getColumns(
   countries: readonly string[],
-  direction: Direction
+  direction: Direction,
+  initiateSearch
 ): readonly Column<Row, SummaryRow>[] {
   return [
     SelectColumn,
@@ -107,7 +104,11 @@ function getColumns(
         return (
           <>
             {row.client}
-            <LinkedInCopyButton row={row} onRowChange={onRowChange} />
+            <LinkedInCopyButton
+              row={row}
+              onRowChange={onRowChange}
+              initiateSearch={initiateSearch}
+            />
           </>
         );
       }
@@ -274,12 +275,45 @@ export default function CommonFeatures({ direction }: Props) {
   const [rows, setRows] = useState(createRows);
   const [sortColumns, setSortColumns] = useState<readonly SortColumn[]>([]);
   const [selectedRows, setSelectedRows] = useState((): ReadonlySet<number> => new Set());
+  // New state to track the ID of the row being searched
+  const [activeSearchRowId, setActiveSearchRowId] = useState(null);
+
+  useEffect(() => {
+    const searchClient = async () => {
+      if (activeSearchRowId !== null) {
+        const row = rows.find((r) => r.id === activeSearchRowId);
+        if (row) {
+          const response = await fetch(
+            `${import.meta.env.VITE_REACT_APP_SEARCH_URL}${encodeURIComponent(row.client)}`,
+            {
+              mode: 'cors' // This is the default if not specified
+            }
+          );
+          const data = await response.json();
+          // Assuming the response data is what should be set in the Linkedin column
+          const updatedRow = { ...row, linkedin: JSON.stringify(data) };
+          setRows(rows.map((r) => (r.id === activeSearchRowId ? updatedRow : r)));
+        }
+        setActiveSearchRowId(null); // Reset the active search ID
+      }
+    };
+
+    searchClient();
+  }, [activeSearchRowId, rows]);
+
+  const initiateSearch = (rowId) => {
+    setActiveSearchRowId(rowId);
+  };
 
   const countries = useMemo((): readonly string[] => {
     return [...new Set(rows.map((r) => r.country))].sort(new Intl.Collator().compare);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const columns = useMemo(() => getColumns(countries, direction), [countries, direction]);
+  // Modify your getColumns function similarly to include the LinkedInCopyButton with the new initiateSearch prop
+  const columns = useMemo(
+    () => getColumns(countries, direction, initiateSearch), // Ensure initiateSearch is passed here
+    [countries, direction, initiateSearch] // Add initiateSearch as a dependency
+  );
 
   const summaryRows = useMemo((): readonly SummaryRow[] => {
     return [
