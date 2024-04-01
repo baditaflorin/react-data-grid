@@ -41,12 +41,6 @@ const dialogContainerClassname = css`
   }
 `;
 
-const dateFormatter = new Intl.DateTimeFormat(navigator.language);
-const currencyFormatter = new Intl.NumberFormat(navigator.language, {
-  style: 'currency',
-  currency: 'eur'
-});
-
 interface SummaryRow {
   id: string;
   totalCount: number;
@@ -62,12 +56,6 @@ interface Row {
   contact: string;
   assignee: string;
   progress: number;
-  startTimestamp: number;
-  endTimestamp: number;
-  budget: number;
-  transaction: string;
-  account: string;
-  version: string;
   available: boolean;
 }
 
@@ -81,7 +69,7 @@ function getColumns(
       key: 'id',
       name: 'ID',
       frozen: true,
-      resizable: false,
+      resizable: true,
       renderSummaryCell() {
         return <strong>Total</strong>;
       }
@@ -182,35 +170,6 @@ function getColumns(
       }
     },
     {
-      key: 'startTimestamp',
-      name: 'Start date',
-      renderCell(props) {
-        return dateFormatter.format(props.row.startTimestamp);
-      }
-    },
-    {
-      key: 'endTimestamp',
-      name: 'Deadline',
-      renderCell(props) {
-        return dateFormatter.format(props.row.endTimestamp);
-      }
-    },
-    {
-      key: 'budget',
-      name: 'Budget',
-      renderCell(props) {
-        return currencyFormatter.format(props.row.budget);
-      }
-    },
-    {
-      key: 'transaction',
-      name: 'Transaction type'
-    },
-    {
-      key: 'account',
-      name: 'Account'
-    },
-    {
       key: 'version',
       name: 'Version',
       renderEditCell: textEditor
@@ -244,7 +203,7 @@ function createRows(): readonly Row[] {
   const now = Date.now();
   const rows: Row[] = [];
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 10; i++) {
     rows.push({
       id: i,
       title: `Task #${i + 1}`,
@@ -254,12 +213,6 @@ function createRows(): readonly Row[] {
       contact: faker.internet.exampleEmail(),
       assignee: faker.person.fullName(),
       progress: Math.random() * 100,
-      startTimestamp: now - Math.round(Math.random() * 1e10),
-      endTimestamp: now + Math.round(Math.random() * 1e10),
-      budget: 500 + Math.random() * 10500,
-      transaction: faker.finance.transactionType(),
-      account: faker.finance.iban(),
-      version: faker.system.semver(),
       available: Math.random() > 0.5
     });
   }
@@ -277,9 +230,6 @@ function getComparator(sortColumn: string): Comparator {
     case 'area':
     case 'country':
     case 'contact':
-    case 'transaction':
-    case 'account':
-    case 'version':
       return (a, b) => {
         return a[sortColumn].localeCompare(b[sortColumn]);
       };
@@ -289,9 +239,6 @@ function getComparator(sortColumn: string): Comparator {
       };
     case 'id':
     case 'progress':
-    case 'startTimestamp':
-    case 'endTimestamp':
-    case 'budget':
       return (a, b) => {
         return a[sortColumn] - b[sortColumn];
       };
@@ -343,7 +290,8 @@ export default function CommonFeatures({ direction }: Props) {
       rows={sortedRows}
       defaultColumnOptions={{
         sortable: true,
-        resizable: true
+        resizable: true,
+        draggable: true
       }}
       selectedRows={selectedRows}
       onSelectedRowsChange={setSelectedRows}
