@@ -14,6 +14,7 @@ import { EditProgressCell } from './components/columns/EditProgressCell'; // Adj
 
 import { ExportButton } from './components/ExportButton'; // Adjust the path as necessary
 
+import { useSortedRows } from './utils/sortRows'; // Adjust the import path as necessary
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
 import {
@@ -222,33 +223,6 @@ function createRows(): readonly Row[] {
   return rows;
 }
 
-type Comparator = (a: unknown, b: unknown) => number;
-
-function getUniversalComparator<T>(columnKey: keyof T): Comparator {
-  return (a, b) => {
-    const aValue = a[columnKey];
-    const bValue = b[columnKey];
-
-    // Check for string values
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return aValue.localeCompare(bValue);
-    }
-
-    // Check for number values
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return aValue - bValue;
-    }
-
-    // Check for boolean values
-    if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-      return aValue === bValue ? 0 : aValue ? -1 : 1;
-    }
-
-    // Fallback for any types not explicitly checked (e.g., dates could be compared as strings)
-    return 0;
-  };
-}
-
 export default function CommonFeatures({ direction }: Props) {
   const [rows, setRows] = useState(createRows);
   const [sortColumns, setSortColumns] = useState<readonly SortColumn[]>([]);
@@ -283,20 +257,7 @@ export default function CommonFeatures({ direction }: Props) {
     ];
   }, [rows]);
 
-  const sortedRows = useMemo((): readonly Row[] => {
-    if (sortColumns.length === 0) return rows;
-
-    return [...rows].sort((a, b) => {
-      for (const sort of sortColumns) {
-        const comparator = getUniversalComparator(sort.columnKey);
-        const compResult = comparator(a, b);
-        if (compResult !== 0) {
-          return sort.direction === 'ASC' ? compResult : -compResult;
-        }
-      }
-      return 0;
-    });
-  }, [rows, sortColumns]);
+  const sortedRows = useSortedRows(rows, sortColumns); // Use the imported function
 
   const gridElement = (
     <DataGrid
