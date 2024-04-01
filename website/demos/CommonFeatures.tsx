@@ -73,7 +73,6 @@ function LinkedInCopyButton({ row, onRowChange }) {
   );
 }
 
-
 function getColumns(
   countries: readonly string[],
   direction: Direction
@@ -103,7 +102,15 @@ function getColumns(
       name: 'Client',
       width: 'max-content',
       draggable: true,
-      renderEditCell: textEditor
+      renderEditCell: textEditor,
+      renderCell({ row, onRowChange }) {
+        return (
+          <>
+            {row.client}
+            <LinkedInCopyButton row={row} onRowChange={onRowChange} />
+          </>
+        );
+      }
     },
     {
       key: 'linkedin',
