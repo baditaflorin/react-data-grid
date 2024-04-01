@@ -1,5 +1,3 @@
-'use strict';
-
 const ignoreRules = require('eslint-config-prettier').rules;
 
 const rules = {
@@ -548,7 +546,7 @@ const rules = {
     1,
     { assertionStyle: 'as', objectLiteralTypeAssertions: 'never' }
   ],
-  '@typescript-eslint/consistent-type-definitions': 1,
+  '@typescript-eslint/consistent-type-definitions': 0,
   '@typescript-eslint/consistent-type-exports': 0,
   '@typescript-eslint/consistent-type-imports': [1, { fixStyle: 'inline-type-imports' }],
   '@typescript-eslint/explicit-function-return-type': 0,
