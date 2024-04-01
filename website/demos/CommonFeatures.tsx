@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { faker } from '@faker-js/faker';
-import { css } from '@linaria/core';
 
 import DataGrid, {
   SelectCellFormatter,
@@ -14,10 +13,18 @@ import { textEditorClassname } from '../../src/editors/textEditor';
 import type { Direction } from '../../src/types';
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
+import {
+  cellWithButtonStyleString,
+  dialogContainerStyleString,
+  searchButtonStyleString,
+  toolbarStyleString
+} from './styles.js';
 
 async function fetchData(clientName) {
   const response = await fetch(
-    `${import.meta.env.VITE_REACT_APP_SEARCH_URL}${encodeURIComponent(`${clientName} linkedin.com`)}`,
+    `${import.meta.env.VITE_REACT_APP_SEARCH_URL}${encodeURIComponent(
+      `${clientName} linkedin.com`
+    )}`,
     {
       mode: 'cors' // This is the default if not specified
     }
@@ -53,44 +60,6 @@ function useSearchAndUpdate(rows, activeSearchRowId, setRows, setActiveSearchRow
 
 // console.log(import.meta.env);
 
-const toolbarClassname = css`
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-block-end: 8px;
-`;
-
-const dialogContainerClassname = css`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.1);
-
-  > dialog {
-    width: 300px;
-    > input {
-      width: 100%;
-    }
-
-    > menu {
-      text-align: end;
-    }
-  }
-`;
-
-const searchButtonStyle = css`
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  margin-left: 8px;
-`;
-
-const cellWithButtonStyle = css`
-  &:hover .${searchButtonStyle} {
-    opacity: 1;
-  }
-`;
-
 interface SummaryRow {
   id: string;
   totalCount: number;
@@ -109,9 +78,9 @@ interface Row {
   available: boolean;
 }
 
-function LinkedInCopyButton({ row, initiateSearch, className = '' }) {
+function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }) {
   // Directly include the searchButtonStyle and any additional classes passed via props
-  const buttonClass = `${searchButtonStyle} ${className}`;
+  const buttonClass = `${searchButtonStyleString} ${className}`;
 
   return (
     <button onClick={() => initiateSearch(row.id)} className={buttonClass}>
@@ -153,13 +122,13 @@ function getColumns(
       renderEditCell: textEditor,
       renderCell({ row, onRowChange }) {
         return (
-          <div className={cellWithButtonStyle}>
+          <div className={cellWithButtonStyleString}>
             {row.client}
             <LinkedInCopyButton
               row={row}
               onRowChange={onRowChange}
               initiateSearch={initiateSearch}
-              className={searchButtonStyle}
+              className={searchButtonStyleString}
             />
           </div>
         );
@@ -212,7 +181,7 @@ function getColumns(
         return createPortal(
           <div
             dir={direction}
-            className={dialogContainerClassname}
+            className={dialogContainerStyleString}
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 onClose();
@@ -396,7 +365,7 @@ export default function CommonFeatures({ direction }: Props) {
 
   return (
     <>
-      <div className={toolbarClassname}>
+      <div className={toolbarStyleString}>
         <ExportButton onExport={() => exportToCsv(gridElement, 'CommonFeatures.csv')}>
           Export to CSV
         </ExportButton>
