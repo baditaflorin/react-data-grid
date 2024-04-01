@@ -73,7 +73,6 @@ interface Row {
   linkedin: string;
   country: string;
   contact: string;
-  assignee: string;
   progress: number;
   available: boolean;
 }
@@ -162,11 +161,6 @@ function getColumns(
       renderEditCell: textEditor
     },
     {
-      key: 'assignee',
-      name: 'Assignee',
-      renderEditCell: textEditor
-    },
-    {
       key: 'progress',
       name: 'Completion',
       renderCell(props) {
@@ -252,11 +246,10 @@ function createRows(): readonly Row[] {
     rows.push({
       id: i,
       title: `Task #${i + 1}`,
-      client: faker.company.name(),
+      client: faker.person.fullName(),
       linkedin: '',
       country: faker.location.country(),
       contact: faker.internet.exampleEmail(),
-      assignee: faker.person.fullName(),
       progress: Math.random() * 100,
       available: Math.random() > 0.5
     });
@@ -269,7 +262,6 @@ type Comparator = (a: Row, b: Row) => number;
 
 function getComparator(sortColumn: string): Comparator {
   switch (sortColumn) {
-    case 'assignee':
     case 'title':
     case 'client':
     case 'linkedin':
