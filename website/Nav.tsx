@@ -1,4 +1,3 @@
-import { NavLink } from 'react-router-dom';
 import { css } from '@linaria/core';
 
 import type { Direction } from '../src/types';
@@ -72,7 +71,7 @@ interface Props {
 export default function Nav({ direction, onDirectionChange }: Props) {
   return (
     <nav className={navClassname}>
-      <h1>react-data-grid</h1>
+      {/* <h1>react-data-grid</h1>
 
       <h2>Demos</h2>
       <NavLink to="/common-features" end className={getActiveClassname}>
@@ -170,7 +169,7 @@ export default function Nav({ direction, onDirectionChange }: Props) {
           onChange={() => onDirectionChange(direction === 'rtl' ? 'ltr' : 'rtl')}
         />
         Right to left
-      </label>
+      </label> */}
     </nav>
   );
 }
