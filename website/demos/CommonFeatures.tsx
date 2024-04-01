@@ -8,8 +8,8 @@ import DataGrid, {
   type Column,
   type SortColumn
 } from '../../src';
-import { textEditorClassname } from '../../src/editors/textEditor';
 import type { Direction } from '../../src/types';
+import EditCountryCell from './components/columns/EditCountryCell'; // Adjust the import path according to your project structure
 import { EditProgressCell } from './components/columns/EditProgressCell'; // Adjust the import path according to your project structure
 
 import { ExportButton } from './components/ExportButton'; // Adjust the path as necessary
@@ -144,17 +144,11 @@ function getColumns(
     {
       key: 'country',
       name: 'Country',
-      renderEditCell: (p) => (
-        <select
-          autoFocus
-          className={textEditorClassname}
-          value={p.row.country}
-          onChange={(e) => p.onRowChange({ ...p.row, country: e.target.value }, true)}
-        >
-          {countries.map((country) => (
-            <option key={country}>{country}</option>
-          ))}
-        </select>
+      renderEditCell: (props) => (
+        <EditCountryCell
+          {...props}
+          countries={countries} // Assuming countries is available in the scope
+        />
       )
     },
     {
