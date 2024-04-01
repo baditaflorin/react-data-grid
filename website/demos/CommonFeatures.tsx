@@ -222,30 +222,31 @@ function createRows(): readonly Row[] {
   return rows;
 }
 
-type Comparator = (a: Row, b: Row) => number;
+type Comparator = (a: unknown, b: unknown) => number;
 
-function getComparator(sortColumn: string): Comparator {
-  switch (sortColumn) {
-    case 'title':
-    case 'client':
-    case 'linkedin':
-    case 'country':
-    case 'contact':
-      return (a, b) => {
-        return a[sortColumn].localeCompare(b[sortColumn]);
-      };
-    case 'available':
-      return (a, b) => {
-        return a[sortColumn] === b[sortColumn] ? 0 : a[sortColumn] ? 1 : -1;
-      };
-    case 'id':
-    case 'progress':
-      return (a, b) => {
-        return a[sortColumn] - b[sortColumn];
-      };
-    default:
-      throw new Error(`unsupported sortColumn: "${sortColumn}"`);
-  }
+function getUniversalComparator<T>(columnKey: keyof T): Comparator {
+  return (a, b) => {
+    const aValue = a[columnKey];
+    const bValue = b[columnKey];
+
+    // Check for string values
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return aValue.localeCompare(bValue);
+    }
+
+    // Check for number values
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      return aValue - bValue;
+    }
+
+    // Check for boolean values
+    if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+      return aValue === bValue ? 0 : aValue ? -1 : 1;
+    }
+
+    // Fallback for any types not explicitly checked (e.g., dates could be compared as strings)
+    return 0;
+  };
 }
 
 export default function CommonFeatures({ direction }: Props) {
@@ -287,7 +288,7 @@ export default function CommonFeatures({ direction }: Props) {
 
     return [...rows].sort((a, b) => {
       for (const sort of sortColumns) {
-        const comparator = getComparator(sort.columnKey);
+        const comparator = getUniversalComparator(sort.columnKey);
         const compResult = comparator(a, b);
         if (compResult !== 0) {
           return sort.direction === 'ASC' ? compResult : -compResult;
