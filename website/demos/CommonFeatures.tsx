@@ -3,14 +3,12 @@ import { faker } from '@faker-js/faker';
 
 import DataGrid, { SelectColumn, textEditor, type Column, type SortColumn } from '../../src';
 import type { Direction } from '../../src/types';
-import AvailableCellRenderer from './components/columns/AvailableCellRenderer'; // Adjust the import path as necessary
-
-import EditCountryCell from './components/columns/EditCountryCell'; // Adjust the import path according to your project structure
-import { EditProgressCell } from './components/columns/EditProgressCell'; // Adjust the import path according to your project structure
+import AvailableCellRenderer from './components/columns/AvailableCellRenderer';
+import EditCountryCell from './components/columns/EditCountryCell';
+import { EditProgressCell } from './components/columns/EditProgressCell';
 import LinkedInInfoButton from './components/columns/LinkedInInfoButton';
-import { ExportButton } from './components/ExportButton'; // Adjust the path as necessary
-
-import { useSortedRows } from './utils/sortRows'; // Adjust the import path as necessary
+import { ExportButton } from './components/ExportButton';
+import { useSortedRows } from './utils/sortRows';
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
 import {
@@ -59,13 +57,13 @@ function useSearchAndUpdate(rows, activeSearchRowId, setRows, setActiveSearchRow
 
 // console.log(import.meta.env);
 
-interface SummaryRow {
+type SummaryRow = {
   id: string;
   totalCount: number;
   yesCount: number;
-}
+};
 
-interface Row {
+type Row = {
   id: number;
   title: string;
   client: string;
@@ -78,7 +76,7 @@ interface Row {
   linkedinHeadline?: string;
   companyOrSchoolLink?: string;
   companyOrSchool?: string;
-}
+};
 
 function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }) {
   // Directly include the searchButtonStyle and any additional classes passed via props
@@ -86,7 +84,7 @@ function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }
 
   return (
     <button onClick={() => initiateSearch(row.id)} className={buttonClass}>
-      Search Client
+      Search Entity
     </button>
   );
 }
@@ -144,6 +142,9 @@ function getColumns(
         <div className={cellWithButtonStyleString}>
           {row.linkedin && (
             <>
+              {/* <a href={row.linkedin} target="_blank" rel="noopener noreferrer">
+                          {row.linkedin}
+              </a> */}
               {/* Display LinkedInInfoButton only if there's a LinkedIn URL */}
               <LinkedInInfoButton
                 linkedinUrl={row.linkedin}
@@ -159,9 +160,6 @@ function getColumns(
                   });
                 }}
               />
-              <a href={row.linkedin} target="_blank" rel="noopener noreferrer">
-                View LinkedIn
-              </a>
             </>
           )}
         </div>
