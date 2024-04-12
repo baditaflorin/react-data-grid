@@ -8,6 +8,7 @@ import EditCountryCell from './components/columns/EditCountryCell';
 import { EditProgressCell } from './components/columns/EditProgressCell';
 import LinkedInInfoButton from './components/columns/LinkedInInfoButton';
 import { ExportButton } from './components/ExportButton';
+import { LatLonButton } from './components/columns/LatLonButton'
 import { useSortedRows } from './utils/sortRows';
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
@@ -76,6 +77,7 @@ type Row = {
   linkedinHeadline?: string;
   companyOrSchoolLink?: string;
   companyOrSchool?: string;
+  latLon?: string;
 };
 
 function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }) {
@@ -191,14 +193,40 @@ function getColumns(
         </a>
       )
     },
+    // {
+    //   key: 'country',
+    //   name: 'Country',
+    //   renderEditCell: (props) => (
+    //     <EditCountryCell
+    //       {...props}
+    //       countries={countries} // Assuming countries is available in the scope
+    //     />
+    //   )
+    // },
     {
       key: 'country',
       name: 'Country',
+      renderCell: ({ row, onRowChange }) => (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {row.country}
+          <LatLonButton
+            country={row.country}
+            onUpdate={(latLon) => onRowChange({ ...row, latLon })}
+          />
+        </div>
+      ),
       renderEditCell: (props) => (
-        <EditCountryCell
-          {...props}
-          countries={countries} // Assuming countries is available in the scope
-        />
+        <EditCountryCell {...props} countries={countries} />
+      )
+    }
+,    
+    {
+      key: 'latLon',
+      name: 'Coordinates',
+      renderCell: ({ row }) => (
+        <div>
+          {row.latLon || 'Not available'}
+        </div>
       )
     },
     {
