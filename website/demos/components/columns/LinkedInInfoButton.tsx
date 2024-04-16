@@ -66,4 +66,33 @@ const LinkedInInfoButton: React.FC<LinkedInInfoButtonProps> = ({
   );
 };
 
+export async function fetchLinkedInInfoForAll(rows, updateRow) {
+  const promises = rows.map(async (row) => {
+      if (!row.linkedin) {
+          console.log(`No LinkedIn URL for row ${row.id}, skipping.`);
+          return; // Skip rows without a LinkedIn URL
+      }
+
+      try {
+          const searchUrl = `${import.meta.env.VITE_REACT_LINKEDIN_SOFT_SEARCH_URL}${encodeURIComponent(row.linkedin)}`;
+          const response = await fetch(searchUrl);
+          const jsonData = await response.json();
+
+          if (jsonData?.data) {
+              const linkedInData = JSON.parse(jsonData.data)[0];
+              updateRow(row.id, {
+                  linkedinImageUrl: linkedInData.imageUrl,
+                  linkedinHeadline: linkedInData.headline,
+                  companyOrSchool: linkedInData.companyOrSchool,
+                  companyOrSchoolLink: linkedInData.companyOrSchoolLink
+              });
+          }
+      } catch (error) {
+          console.error(`Failed to fetch LinkedIn info for row ${row.id}:`, error);
+      }
+  });
+
+  await Promise.all(promises);
+}
+
 export default LinkedInInfoButton;

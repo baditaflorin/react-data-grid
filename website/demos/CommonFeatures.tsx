@@ -6,9 +6,15 @@ import type { Direction } from '../../src/types';
 import AvailableCellRenderer from './components/columns/AvailableCellRenderer';
 import EditCountryCell from './components/columns/EditCountryCell';
 import { EditProgressCell } from './components/columns/EditProgressCell';
-import LinkedInInfoButton from './components/columns/LinkedInInfoButton';
+import {
+  fetchCoordinates,
+  fetchLatLonForAll,
+  LatLonButton
+} from './components/columns/LatLonButton';
+import LinkedInInfoButton, {
+  fetchLinkedInInfoForAll
+} from './components/columns/LinkedInInfoButton';
 import { ExportButton } from './components/ExportButton';
-import { LatLonButton } from './components/columns/LatLonButton'
 import { useSortedRows } from './utils/sortRows';
 import type { Props } from './types';
 import { exportToCsv, exportToPdf } from './exportUtils';
@@ -17,6 +23,84 @@ import {
   searchButtonStyleString,
   toolbarStyleString
 } from './styles.js';
+
+const MAX_CONCURRENT_REQUESTS = 2; // You can tweak this value based on your needs or API limits
+
+async function semaphoreControlledFetch(rows, fetchFunction, updateRow) {
+  let activeRequests = 0;
+  let currentIndex = 0;
+
+  return new Promise((resolve, reject) => {
+    const executeNext = async () => {
+      if (currentIndex >= rows.length) {
+        if (activeRequests === 0) resolve(); // Resolve when all requests are done
+        return;
+      }
+
+      const row = rows[currentIndex++];
+      if (row) {
+        activeRequests++;
+        try {
+          const result = await fetchFunction(row);
+          updateRow(row.id, result);
+        } catch (error) {
+          console.error(`Failed to fetch for row ${row.id}:`, error);
+        } finally {
+          activeRequests--;
+          executeNext(); // Proceed to next item regardless of success or failure
+        }
+      }
+      if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+        executeNext(); // Start another request if we have not reached the limit
+      }
+    };
+
+    // Start the initial set of concurrent requests
+    for (let i = 0; i < Math.min(MAX_CONCURRENT_REQUESTS, rows.length); i++) {
+      executeNext();
+    }
+  });
+}
+
+async function fetchLinkedInDataFunction(row) {
+  try {
+    const data = await fetchData(row.client);
+    const link = extractLink(data);
+    if (link) {
+      return { linkedin: link };
+    }
+  } catch (error) {
+    console.error(`Failed to search for client ${row.client}:`, error);
+  }
+  return null; // Return null if no data was fetched or an error occurred
+}
+
+function fetchCoordinatesFunction(row) {
+  return fetchCoordinates(row.country).then((latLon) => ({
+    latLon: `${latLon.latitude}, ${latLon.longitude}`
+  }));
+}
+
+function GlobalActionsToolbar({ rows, updateRow }) {
+  const handleFetchAllLatLon = async () => {
+    await semaphoreControlledFetch(rows, fetchCoordinatesFunction, updateRow);
+  };
+  const handleSearchAllEntities = async () => {
+    await semaphoreControlledFetch(rows, fetchLinkedInDataFunction, updateRow);
+  };
+
+  const handleFetchAllLinkedInInfo = async () => {
+    await fetchLinkedInInfoForAll(rows, updateRow);
+  };
+
+  return (
+    <div style={{ marginBottom: '10px' }}>
+      <button onClick={handleFetchAllLatLon}>Fetch All Coordinates</button>
+      <button onClick={handleSearchAllEntities}>Search All Entities</button>
+      <button onClick={handleFetchAllLinkedInInfo}>Fetch All LinkedIn Info</button>
+    </div>
+  );
+}
 
 async function fetchData(clientName) {
   const response = await fetch(
@@ -79,6 +163,23 @@ type Row = {
   companyOrSchool?: string;
   latLon?: string;
 };
+
+async function fetchLinkedInForAll(rows, updateRow) {
+  const promises = rows.map(async (row) => {
+    try {
+      const data = await fetchData(row.client);
+      const link = extractLink(data);
+      if (link) {
+        updateRow(row.id, { linkedin: link });
+      }
+    } catch (error) {
+      console.error(`Failed to search for client ${row.client}:`, error);
+    }
+  });
+
+  // Optionally, wait for all fetches to complete
+  await Promise.all(promises);
+}
 
 function LinkedInCopyButton({ row, onRowChange, initiateSearch, className = '' }) {
   // Directly include the searchButtonStyle and any additional classes passed via props
@@ -206,6 +307,12 @@ function getColumns(
     {
       key: 'country',
       name: 'Country',
+      headerRenderer: ({ allRows, updateRow }) => (
+        <div>
+          Country
+          <button onClick={() => fetchLatLonForAll(allRows, updateRow)}>Fetch All Coords</button>
+        </div>
+      ),
       renderCell: ({ row, onRowChange }) => (
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {row.country}
@@ -215,19 +322,12 @@ function getColumns(
           />
         </div>
       ),
-      renderEditCell: (props) => (
-        <EditCountryCell {...props} countries={countries} />
-      )
-    }
-,    
+      renderEditCell: (props) => <EditCountryCell {...props} countries={countries} />
+    },
     {
       key: 'latLon',
       name: 'Coordinates',
-      renderCell: ({ row }) => (
-        <div>
-          {row.latLon || 'Not available'}
-        </div>
-      )
+      renderCell: ({ row }) => <div>{row.latLon || 'Not available'}</div>
     },
     {
       key: 'contact',
@@ -280,7 +380,7 @@ function createRows(): readonly Row[] {
   const now = Date.now();
   const rows: Row[] = [];
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 40; i++) {
     rows.push({
       id: i,
       title: `Task #${i + 1}`,
@@ -370,6 +470,7 @@ export default function CommonFeatures({ direction }: Props) {
         <ExportButton onExport={() => exportToPdf(gridElement, 'CommonFeatures.pdf')}>
           Export to PDF
         </ExportButton>
+        <GlobalActionsToolbar rows={rows} updateRow={updateRow} />
       </div>
       {gridElement}
     </>
